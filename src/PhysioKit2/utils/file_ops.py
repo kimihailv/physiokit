@@ -40,7 +40,7 @@ class File_IO(QThread):
         self.config.CSVFILE_HANDLE = open(self.config.TEMP_FILENAME, 'w', encoding="utf", newline="")
         self.writer = csv.writer(self.config.CSVFILE_HANDLE)
 
-        self.csv_header = self.ui.channels + ["event_code"]
+        self.csv_header = ["timestamp"] + self.ui.channels + ["event_code"]
         self.writer.writerow(self.csv_header)
 
 

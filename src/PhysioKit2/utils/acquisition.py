@@ -114,6 +114,7 @@ class Data_Acquisition_Thread(QThread):
                         self.bf_out_flag = False
 
                     serial_data = self.ser.readline(buffersize)
+                    sample_timestamp = datetime.now().isoformat()
                     serial_data = serial_data.split(b'\r\n')
                     serial_data = serial_data[0].split(b',')
                     #print(serial_data)
@@ -144,14 +145,14 @@ class Data_Acquisition_Thread(QThread):
                                 curr_elapsed_time = 0
                                 
                             else:
-                                self.signals.data_signal.emit(value)
+                                self.signals.data_signal.emit([sample_timestamp] + value)
                                 curr_elapsed_time = int(round(elapsed_time/1000.0, 0))
                                 if prev_elapsed_time < curr_elapsed_time:
                                     prev_elapsed_time = curr_elapsed_time
                                     self.signals.time_signal.emit(curr_elapsed_time)
 
                         else:
-                            self.signals.data_signal.emit(value)
+                            self.signals.data_signal.emit([sample_timestamp] + value)
 
                             curr_elapsed_time = int(round(elapsed_time/1000.0, 0))
                             if prev_elapsed_time < curr_elapsed_time:
