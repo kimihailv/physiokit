@@ -39,6 +39,7 @@ from PhysioKit2.utils.external_sync import ServerThread, ClientThread
 from PhysioKit2.utils.acquisition import Data_Acquisition_Thread
 from PhysioKit2.utils.file_ops import File_IO
 from PhysioKit2.utils.biofeedback import BioFeedback_Thread
+from PhysioKit2.utils.webcam_capture import Webcam_Capture_Thread
 from PhysioKit2.utils import config
 from PhysioKit2.sqa.inference_thread import sqaPPGInference
 
@@ -194,6 +195,12 @@ class physManager(QWidget):
             if self.ui.biofeedback_thread.isRunning():
                 self.ui.biofeedback_thread.stop()
 
+        if hasattr(self.ui, 'webcam_thread_created') and self.ui.webcam_thread_created:
+            if not self.ui.webcam_thread.stop_flag:
+                self.ui.webcam_thread.stop_flag = True
+            if self.ui.webcam_thread.isRunning():
+                self.ui.webcam_thread.stop()
+
         if self.ui.fileIO_thread_created:
             if not self.ui.fileIO_thread.stop_flag:
                 self.ui.fileIO_thread.stop_flag = True
@@ -305,6 +312,12 @@ class physManager(QWidget):
                 self.ui.fileIO_thread.signals.record_signal.connect(self.start_recording)
 
                 self.ui.fileIO_thread.start()
+
+                # Initialize webcam capture thread
+                self.ui.webcam_thread = Webcam_Capture_Thread()
+                self.ui.webcam_thread.signals.status_signal.connect(self.update_log)
+                self.ui.webcam_thread_created = True
+                self.ui.webcam_thread.start()
 
                 # # Place the matplotlib figure
                 gv_rect = self.ui.graphicsView.viewport().rect()
@@ -517,6 +530,16 @@ class physManager(QWidget):
         if start_signal:
             self.ui.record_start_time = datetime.now()
             self.ui.data_record_flag = True
+
+            # Start webcam recording if checkbox is checked
+            if self.ui.webcam_thread_created and self.ui.checkBox_webcam.isChecked():
+                cap = cv2.VideoCapture(0)
+                if cap.isOpened():
+                    self.ui.checkBox_webcam.setEnabled(False)
+                    self.ui.webcam_thread.set_capture(cap)
+                    self.ui.webcam_thread.start_recording = True
+                else:
+                    self.ui.label_status.setText("Webcam not available. Recording without video.")
 
             self.ui.utc_sec = str((self.ui.record_start_time - datetime(1970, 1, 1)).total_seconds())
             self.ui.utc_sec = self.ui.utc_sec.replace('.', '_')
